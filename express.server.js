@@ -75,7 +75,7 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.post("/urls", (req, res) => {
   console.log(req.body.longURL);  // Log the POST request body to the console
-  res.redirect("Ok");         // Respond with 'Ok' (we will replace this)
+  res.send("Ok");         // Respond with 'Ok' (we will replace this)
 });
 
 
