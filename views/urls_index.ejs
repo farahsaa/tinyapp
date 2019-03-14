@@ -17,15 +17,20 @@
 <h2>My URLs</h2>
 
 
-
 <ul>
 
 <% for (var url in urls) { %>
   <li>
-  <p> <%= url %> <%= urls[url] %> </p>
+  <p> <%= url %> <a href="#"><%= urls[url] %> </a></p>
 </li>
 <form method="POST" action="/urls/<%=url%>/delete">
-<button input type="delete" class="btn btn-danger">Delete</button>
+<button input type="submit" class="btn btn-danger">Delete</button>
+
+</form>
+
+<form method="GET" action="/urls/<%=url%>">
+  <button input type="submit" class="btn btn-primary">Edit</button>
+  
 </form>
 <% } %>
 </ul>
