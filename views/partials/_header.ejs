@@ -1,4 +1,5 @@
 <% if (user) { %>
+    <p>Logged in as <%= user.email%> </p>
 
      <form action="/logout" method="POST">
         <button type="submit">Logout</button> 
@@ -6,8 +7,9 @@
 
 <%} else { %> 
 
-    <a href="/register">Register</a>
     <a href="/login">Login</a>
+    <a href="/register">Register</a>
+   
 <%} %>
 
 

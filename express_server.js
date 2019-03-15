@@ -23,7 +23,7 @@ const users = {
   "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
+    password: "123"
   },
  "user2RandomID": {
     id: "user2RandomID", 
@@ -58,20 +58,21 @@ function checkEmail(email) {
 
 
 app.get("/urls/new", (req, res) => {
+
   let templateVars = { user: users[req.cookies.user_id], urls: urlDatabase };  
   res.render("urls_new", templateVars);
   });
 
 
 app.get("/urls", (req, res) => {
-  let templateVars = { user: req.cookies.user_id, urls: urlDatabase };
+  let templateVars = { user: users[req.cookies.user_id], urls: urlDatabase };
 
   res.render("urls_index", templateVars);
 });
 
 
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { user: req.cookies.user_id, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]  };
+  let templateVars = { user: users[req.cookies.user_id], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]  };
   res.render("urls_show", templateVars);
 });
 
@@ -83,14 +84,17 @@ const longURL = urlDatabase[req.params.shortURL]
 
 
 app.get("/register", (req, res) => {
-  res.render("urls_registration");
+  let templateVars = {user: users[req.cookies.user_id]}
+  res.render("urls_registration", templateVars);
   
 });
 
 
 // **********
 app.get("/login", (req, res) =>{
-  res.render("login");
+  let templateVars = {user: users[req.cookies.user_id]}
+  res.render("login", templateVars)
+
   });
 
 
@@ -157,24 +161,17 @@ app.post ("/logout", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const user = checkEmail(email);
-  if (user && user.password === req.body.password) {
+  const password = req.body.password
+  
+  if (user && user.password === password) {
     
     res.cookie('user_id', user.id)
     res.redirect("/urls")
 
   }
-  else if (user === false)
-    res.status(403).send("Email cannot be found")
-
-
-
-     
-  // }
-  // else {
-  //   res.status(403).send("Bad password")
-
-  // }
-  // res.cookie('name', username);
+  else {
+    res.status(403).send("Email or password cannot be found")
+  }
 
 });
 
@@ -184,7 +181,6 @@ app.post("/login", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
 
 
 
