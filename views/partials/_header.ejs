@@ -1,18 +1,13 @@
-<h1<>This is a header partial</h1>
-<% if (username) { %>
-<p><%= username %> is logged in</p>
+<% if (user) { %>
 
-<form method= "POST" action ="/logout">
- <button type="submit">LOGOUT</button>
-</form>
+     <form action="/logout" method="POST">
+        <button type="submit">Logout</button> 
+     </form>
 
-<%} else {%>
-    <form method="POST" action="/login" >
-        <input type="text" name="username">
-        <button type="submit">LOGIN</button>
-    </form>
+<%} else { %> 
 
+    <a href="/register">Register</a>
+    <a href="/login">Login</a>
 <%} %>
-
 
 
