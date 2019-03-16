@@ -4,6 +4,7 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 const cookieParser = require('cookie-parser')
+const bcrypt = require('bcrypt');
 
 
 //middleware
@@ -14,8 +15,8 @@ app.use(cookieParser())
 // In memory database
 
 var urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {longURL: "http://www.lighthouselabs.ca", userID: "userRandomID"},
+  "9sm5xK": {longURL: "http://www.google.com", userID:"userRandomID"}
 };
 
 // global (?)
@@ -48,36 +49,54 @@ function checkEmail(email) {
       return users[userID]
     }
   }
-  return false;
+  return null;
 }
 
+
+function urlsForUser(id) {
+  var urls = { };
+    for (var shortURL in urlDatabase) {
+      if (urlDatabase[shortURL].user_id === id){
+        urls[shortURL]= urlDatabase[shortURL]
+      }
+    }
+  return urls;
+  }
 //routes
 
 
 // GET REQUESTS
 
+console.log(urlDatabase["b2xVn2"].longURL)
 
 app.get("/urls/new", (req, res) => {
-
-  let templateVars = { user: users[req.cookies.user_id], urls: urlDatabase };  
-  res.render("urls_new", templateVars);
-  });
+  let templateVars = { user: users[req.cookies.user_id] };  
+  if (templateVars.user){
+    res.render("urls_new", templateVars);
+  } else {
+  res.redirect("/login")
+  }
+});
 
 
 app.get("/urls", (req, res) => {
-  let templateVars = { user: users[req.cookies.user_id], urls: urlDatabase };
-
+  if (urlsForUser(req.cookies.user_id)){
+  let templateVars = {urls: urlsForUser(req.cookies.user_id), user: users[req.cookies.user_id]};
   res.render("urls_index", templateVars);
+  }
 });
 
 
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { user: users[req.cookies.user_id], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]  };
+  let shortURL = req.params.shortURL;
+ 
+  let templateVars = {user: req.cookies.name, shortURL: shortURL,
+  longURL: urlDatabase[shortURL].longURL};
   res.render("urls_show", templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
-const longURL = urlDatabase[req.params.shortURL]
+const longURL = urlDatabase[req.params.shortURL].longURL
  res.redirect(longURL);
 });
 
@@ -101,9 +120,9 @@ app.get("/login", (req, res) =>{
 // POST REQUESTS
 
 app.post("/register", (req, res) => {
-
-  const email = req.body.email;
+    const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
     if(!email || !password){
       return res.status(400).send('<h2>please fill out both fields</h2>')
 
@@ -118,7 +137,7 @@ app.post("/register", (req, res) => {
     
     const newUser = {
       email: email, 
-      password: password,
+      password: hashedPassword,
       id: generateRandomString()
     }
 
@@ -134,24 +153,33 @@ app.post("/register", (req, res) => {
 
 app.post("/urls", (req, res) => {
   var shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
-  res.redirect("/urls/:shortURL");         // Respond with 'Ok' (we will replace this)
+  urlDatabase[shortURL] = {longURL:req.body.longURL,
+    user_id: req.cookies.user_id};
+  res.redirect(`/urls/${shortURL}`);         // Respond with 'Ok' (we will replace this)
 });
 
 // ****** 
 app.post ("/urls/:shortURL/delete", (req, res) => {
+  if (users[req.cookies.user_id]){
   var shortURL = [req.params.shortURL]
   delete urlDatabase[shortURL]
   res.redirect("/urls")
-
+  }else {
+    res.status(403).send()
+  }
 });
 
 app.post ("/urls/:shortURL/update", (req, res) => {
+  if (users[req.cookies.user_id]){
   var shortURL = req.params.shortURL;
-  urlDatabase[shortURL] = req.body.longURL
+  urlDatabase[shortURL].longURL = req.body.longURL
   res.redirect("/urls")
+  } else {
+    res.status(403).send()
+  }
 
 });
+
 app.post ("/logout", (req, res) => {
   res.clearCookie('user_id');
   res.redirect("/urls")
@@ -162,9 +190,7 @@ app.post("/login", (req, res) => {
   const email = req.body.email;
   const user = checkEmail(email);
   const password = req.body.password
-  
-  if (user && user.password === password) {
-    
+  if (user && bcrypt.compareSync(password, hashedPassword)) {
     res.cookie('user_id', user.id)
     res.redirect("/urls")
 
@@ -175,12 +201,7 @@ app.post("/login", (req, res) => {
 
 });
 
-
 // LISTENING FOR SOMETHING
 
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
-
-
-
+  console.log(`Example app listening on port ${PORT}!`)});
