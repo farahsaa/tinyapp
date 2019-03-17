@@ -57,9 +57,9 @@ function checkEmail(email) {
 
 
 function urlsForUser(id) {
-  var urls = { };
+  var urls = {};
     for (var shortURL in urlDatabase) {
-      if (urlDatabase[shortURL].user_id === id){
+      if (urlDatabase[shortURL].userID === id){
         urls[shortURL]= urlDatabase[shortURL]
       }
     }
@@ -83,9 +83,12 @@ app.get("/urls/new", (req, res) => {
 
 
 app.get("/urls", (req, res) => {
-  if (urlsForUser(req.session.user_id)){
+  if (Object.keys(urlsForUser(req.session.user_id)).length !== 0){
   let templateVars = {urls: urlsForUser(req.session.user_id ), user: users[req.session.user_id]};
   res.render("urls_index", templateVars);
+  }
+  else {
+    res.send("Sorry not logged in")
   }
 });
 
