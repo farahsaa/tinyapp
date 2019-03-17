@@ -17,7 +17,7 @@ app.use(cookieSession({
 
 // In memory database
 
-var urlDatabase = {
+const urlDatabase = {
   "b2xVn2": {longURL: "http://www.lighthouselabs.ca", userID: "userRandomID"},
   "9sm5xK": {longURL: "http://www.google.com", userID:"userRandomID"}
 };
@@ -36,7 +36,8 @@ const users = {
   }
 }
 
-//helper function
+//helper functions
+
 function generateRandomString() {
   var text = "";
   var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -51,8 +52,7 @@ function checkEmail(email) {
     if (users[userID].email === email) {
       return users[userID]
     }
-  }
-  return null;
+  } return null
 }
 
 
@@ -60,45 +60,57 @@ function urlsForUser(id) {
   var urls = {};
     for (var shortURL in urlDatabase) {
       if (urlDatabase[shortURL].userID === id){
-        urls[shortURL]= urlDatabase[shortURL]
+        urls[shortURL]= urlDatabase[shortURL].longURL
       }
     }
   return urls;
   }
 //routes
 
-
 // GET REQUESTS
 
-console.log(urlDatabase["b2xVn2"].longURL)
-
-app.get("/urls/new", (req, res) => {
-  let templateVars = { user: users[req.session.user_id ] };  
-  if (templateVars.user){
-    res.render("urls_new", templateVars);
-  } else {
-  res.redirect("/login")
-  }
-});
 
 
 app.get("/urls", (req, res) => {
-  if (Object.keys(urlsForUser(req.session.user_id)).length !== 0){
-  let templateVars = {urls: urlsForUser(req.session.user_id ), user: users[req.session.user_id]};
+  var userUrls = urlsForUser(req.session.user_id )
+  let templateVars = {urls: userUrls, user: users[req.session.user_id]};
+  console.log("cookie",req.session.user_id)
+
+  if (users[req.session.user_id]){
   res.render("urls_index", templateVars);
   }
   else {
-    res.send("Sorry not logged in")
+    res.send("you are not logged in")
   }
 });
+
+app.get("/urls/new", (req, res) => {
+  let templateVars = { user: users[req.session.user_id] };  
+  if (templateVars.user){
+    res.render("urls_new", templateVars);
+  } else {
+  res.redirect("/urls")
+  }
+});
+
+// ********** EDIT AND FIX THIS REQUEST ***************** //
+
 
 
 app.get("/urls/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
- 
-  let templateVars = {user:req.session.user_id, shortURL: shortURL,
-  longURL: urlDatabase[shortURL].longURL};
-  res.render("urls_show", templateVars);
+  if(!users[req.session.user_id]){
+    res.send("you are not logged in")
+  }
+  if(urlDatabase[req.params.shortURL].userID === users[req.session.user_id].id){
+    let templateVars = {user:req.session.user_id, shortURL: shortURL,
+      longURL: urlDatabase[shortURL].longURL};
+      res.render("urls_show", templateVars);
+
+  } else {
+    res.send("you do not own url")
+  }
+
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -109,7 +121,7 @@ const longURL = urlDatabase[req.params.shortURL].longURL
 
 
 app.get("/register", (req, res) => {
-  let templateVars = {user: users[ req.session.user_id ]}
+  let templateVars = {user: users[req.session.user_id]}
   res.render("urls_registration", templateVars);
   
 });
@@ -117,8 +129,14 @@ app.get("/register", (req, res) => {
 
 // **********
 app.get("/login", (req, res) =>{
-  let templateVars = {user: users[ req.session.user_id ]}
-  res.render("login", templateVars)
+  console.log("cookie", users[req.session.user_id])
+
+  var user = users[req.session.user_id]
+  if (user){
+    res.redirect("/urls")
+  }
+  else{res.render("login")
+}
 
   });
 
@@ -131,11 +149,9 @@ app.post("/register", (req, res) => {
   const hashedPassword = bcrypt.hashSync(password, 10);
     if(!email || !password){
       return res.status(400).send('<h2>please fill out both fields</h2>')
-
-      // res.redirect("/urls")
     }
 
-    if(checkEmail(email)=== true) {
+    if(checkEmail(email) === true) {
       console.log("Email exists")
       return res.status(400).send('email already exists')
     
@@ -148,9 +164,7 @@ app.post("/register", (req, res) => {
     }
 
     users[newUser.id]= newUser;
-    console.log(users);
-    req.session.user_id = newUser.id
-    res.redirect("/urls")
+    res.redirect("/login")
 
 
 });
@@ -158,9 +172,17 @@ app.post("/register", (req, res) => {
 
 app.post("/urls", (req, res) => {
   var shortURL = generateRandomString();
-  urlDatabase[shortURL] = {longURL:req.body.longURL,
-    user_id:req.session.user_id };
-  res.redirect(`/urls/${shortURL}`);         // Respond with 'Ok' (we will replace this)
+  var user = users[req.session.user_id]
+  if (user){
+  urlDatabase[shortURL] = {
+    longURL:req.body.longURL,
+    userID:req.session.user_id 
+  } 
+  res.redirect(`/urls/${shortURL}`); 
+  }else {
+    res.status(403).send("you are not logged in")
+  }
+         // Respond with 'Ok' (we will replace this)
 });
 
 // ****** 
@@ -170,7 +192,7 @@ app.post ("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[shortURL]
   res.redirect("/urls")
   }else {
-    res.status(403).send()
+    res.status(403).send("you are not logged in")
   }
 });
 
@@ -180,13 +202,13 @@ app.post ("/urls/:shortURL/update", (req, res) => {
   urlDatabase[shortURL].longURL = req.body.longURL
   res.redirect("/urls")
   } else {
-    res.status(403).send()
+    res.status(403).send("you are not logged in")
   }
 
 });
 
 app.post ("/logout", (req, res) => {
-  req.session= null
+  req.session= null;
   res.redirect("/urls")
 
 });
@@ -195,9 +217,11 @@ app.post("/login", (req, res) => {
   const email = req.body.email;
   const user = checkEmail(email);
   const password = req.body.password
-  if (user && bcrypt.compareSync(password, hashedPassword)) {
+  
+  if (user && bcrypt.compareSync(password, user.password )) {
+    req.session.user_id = user.id
     res.redirect("/urls")
-
+    
   }
   else {
     res.status(403).send("Email or password cannot be found")

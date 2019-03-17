@@ -10,6 +10,7 @@
 </head>
 <body style="font-size:20px; padding:50px;">
 
+
 <h1>TinyApp</h1>
 <% include ./partials/_header %>
 
@@ -19,21 +20,17 @@
 
 <ul>
 
-<% for (let url in urls) { %>
+<p> <% for (let url in urls) { %> 
   <li>
-  <p> <%= url %> <a href="#"><%= urls[url].longURL %> </a></p>
+  <p> <%= url %> <%= urls[url].longURL %> </p>
+  <form method="POST" action="/urls/<%=url%>/delete">
+    <button input type="submit" class="btn btn-danger">Delete</button>
+  </form>
+  <a href="/urls/<%=url%>">Edit</a>
 </li>
-<form method="POST" action="/urls/<%=url%>/delete">
-<button input type="submit" class="btn btn-danger">Delete</button>
-
-</form>
-
-<form method="GET" action="/urls/<%=url%>">
-  <button input type="submit" class="btn btn-primary">Edit</button>
-  
-</form>
 <% } %>
 </ul>
+</p>
 
   <!-- Add EJS code here -->
 </body>
